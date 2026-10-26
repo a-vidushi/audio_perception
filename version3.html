@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio Perception Survey — Version 3</title>
+  <meta name="description" content="Linguistic perception survey — Version 3. Listen to each audio clip and rate it on five perceptual dimensions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Language Toggler -->
+  <nav class="lang-bar" role="navigation" aria-label="Language selector">
+    <button class="lang-btn active" data-lang="en"    id="lang-en"    aria-label="English">EN</button>
+    <button class="lang-btn"        data-lang="hi"    id="lang-hi"    aria-label="Hindi">हि</button>
+    <button class="lang-btn"        data-lang="hirom" id="lang-hirom" aria-label="Romanized Hindi">HI (Rom)</button>
+  </nav>
+
+  <main class="container" role="main">
+
+    <!-- Header -->
+    <header class="site-header">
+      <h1 class="site-title">Audio Perception Survey</h1>
+      <p class="site-subtitle">Listen carefully and respond to each question.</p>
+    </header>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progress-wrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span class="progress-label" id="progress-label">1 / 6</span>
+    </div>
+
+    <!-- Audio Card (dynamically rendered) -->
+    <div class="audio-card" id="audio-card"></div>
+
+    <!-- Final / Thank You Screen -->
+    <div class="final-screen" id="final-screen" role="region" aria-label="Completion screen">
+      <h2 class="final-title" id="final-title">Thank you.</h2>
+      <p class="final-subtitle" id="final-sub">Your responses have been recorded.</p>
+      <button class="download-btn" id="download-btn" style="display:none" aria-label="Download responses as CSV">
+        ⬇ Download Responses (CSV)
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Toast warning -->
+  <div class="warning-toast" id="toast" role="alert" aria-live="polite"></div>
+
+  <script src="survey.js"></script>
+  <script>
+    // Version 3 cyclic assignment:
+    // Group 1→file 13, Group 2→file 21, Group 3→file 32,
+    // Group 4→file 43, Group 5→file 51, Group 6→file 62
+    initSurvey({
+      version: 3,
+      audios: ['13', '21', '32', '43', '51', '62']
+    });
+  </script>
+
+</body>
+</html>
