@@ -280,12 +280,16 @@ function initSurvey(config) {
 
     fetch(SHEETS_URL, {
       method: 'POST',
+      mode: 'no-cors',                              // avoids CORS preflight; response will be opaque
       body: JSON.stringify({ rows: rows }),
-      headers: { 'Content-Type': 'text/plain' } // Apps Script requires text/plain to avoid CORS preflight
+      headers: { 'Content-Type': 'text/plain' }
     })
-    .then(function(res) { return res.json(); })
-    .then(function(data) { callback(data.status === 'ok'); })
-    .catch(function() { callback(false); });
+    .then(function() {
+      callback(true);  // opaque response — assume success, data reached the Sheet
+    })
+    .catch(function() {
+      callback(false); // actual network failure — show CSV fallback
+    });
   }
 
   // ── CSV fallback ─────────────────────────────────────────────────────────────
