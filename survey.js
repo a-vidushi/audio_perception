@@ -38,7 +38,7 @@ function initSurvey(config) {
   var AUDIOS    = config.audios;
   var TOTAL     = AUDIOS.length;
 
-  var currentAudio = -1; // -1 represents participant demographics screen
+  var currentAudio = 0;
   var responses    = {};
   var audioPlayed  = {};
   var toastTimer   = null;
@@ -66,7 +66,7 @@ function initSurvey(config) {
   var audioEl = null;
 
   function render() {
-    if (currentAudio === -1) {
+    if (currentAudio >= TOTAL) {
       renderDemographics();
     } else {
       renderAudioCard();
@@ -77,8 +77,8 @@ function initSurvey(config) {
     if (audioEl) { audioEl.pause(); audioEl = null; }
 
     progressWrap.style.display = 'flex';
-    progressFill.style.width = '0%';
-    progressLabel.textContent = 'Details / विवरण';
+    progressFill.style.width = '100%';
+    progressLabel.textContent = 'Final Step / अंतिम चरण';
 
     audioCard.innerHTML = ''
       + '<div class="demographics-card-inner">'
@@ -88,9 +88,9 @@ function initSurvey(config) {
       + '<p class="demographics-sub-hirom">Prathibhagi Vivaran</p>'
       + '</div>'
       + '<div class="demographics-intro">'
-      + '<p class="q-en">Please enter your age and the city you are from before beginning the survey.</p>'
-      + '<p class="q-hi">सर्वेक्षण शुरू करने से पहले कृपया अपनी उम्र और आप किस शहर से हैं, यह बताएं।</p>'
-      + '<p class="q-hirom">Survey shuru karne se pehle kripaya apni umar aur aap kis sheher se hain, yeh batayein.</p>'
+      + '<p class="q-en">Almost done! Please enter your age and the city you are from to complete the survey.</p>'
+      + '<p class="q-hi">लगभग समाप्त! सर्वेक्षण पूरा करने के लिए कृपया अपनी उम्र और आप किस शहर से हैं, यह बताएं।</p>'
+      + '<p class="q-hirom">Lagbhag poora hua! Survey poora karne ke liye kripaya apni umar aur aap kis sheher se hain, yeh batayein.</p>'
       + '</div>'
       + '<div class="demographics-body">'
       + '<div class="demographics-field">'
@@ -110,12 +110,23 @@ function initSurvey(config) {
       + '<input type="text" id="input-city" class="demographics-input" placeholder="e.g. Delhi, Lucknow, Mumbai..." value="' + (demographics.city || '') + '">'
       + '</div>'
       + '</div>'
-      + '<div class="nav-wrap" style="justify-content: flex-end;">'
-      + '<button class="nav-btn primary" id="btn-start-survey">Begin Survey / शुरू करें →</button>'
+      + '<div class="nav-wrap">'
+      + '<button class="nav-btn" id="btn-demo-prev">← Back / पीछे</button>'
+      + '<button class="nav-btn primary" id="btn-submit-survey">Submit / जमा करें</button>'
       + '</div>'
       + '</div>';
 
-    document.getElementById('btn-start-survey').addEventListener('click', function() {
+    document.getElementById('btn-demo-prev').addEventListener('click', function() {
+      var ageVal = (document.getElementById('input-age').value || '').trim();
+      var cityVal = (document.getElementById('input-city').value || '').trim();
+      demographics.age = ageVal;
+      demographics.city = cityVal;
+
+      currentAudio = TOTAL - 1;
+      render();
+    });
+
+    document.getElementById('btn-submit-survey').addEventListener('click', function() {
       var ageVal = (document.getElementById('input-age').value || '').trim();
       var cityVal = (document.getElementById('input-city').value || '').trim();
 
@@ -131,8 +142,7 @@ function initSurvey(config) {
         localStorage.setItem('survey_demographics', JSON.stringify(demographics));
       } catch (e) {}
 
-      currentAudio = 0;
-      render();
+      showFinal();
     });
   }
 
@@ -141,9 +151,17 @@ function initSurvey(config) {
     var saved     = responses[audioFile] || {};
 
     var questionsHTML = QUESTIONS.map(function(q, i) {
-      var val = saved[i] !== undefined ? saved[i] : 5;
+      var isTouched = (saved[i] !== undefined);
+      var val = isTouched ? saved[i] : 5;
       var pct = ((val - 1) / 9) * 100;
-      return '<div class="question-item">'
+      var bgStyle = isTouched
+        ? 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, var(--border) ' + pct + '%, var(--border) 100%)'
+        : '#282828';
+      var sliderClass = isTouched ? 'slider' : 'slider untouched';
+      var valClass    = isTouched ? 'slider-value' : 'slider-value untouched';
+      var valText     = isTouched ? val : '—';
+
+      return '<div class="question-item" id="q-item-' + i + '">'
         + '<div class="question-header">'
         + '<span class="q-num">' + (i + 1) + '.</span>'
         + '<div class="q-multilang">'
@@ -158,10 +176,10 @@ function initSurvey(config) {
         + '<span>Extremely / अत्यंत (Atyant)</span>'
         + '</div>'
         + '<div class="slider-row">'
-        + '<input type="range" min="1" max="10" value="' + val + '" class="slider" id="slider-' + i + '" '
-        + 'style="background: linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, var(--border) ' + pct + '%, var(--border) 100%)" '
+        + '<input type="range" min="1" max="10" value="' + val + '" class="' + sliderClass + '" id="slider-' + i + '" '
+        + 'style="background: ' + bgStyle + '" '
         + 'data-qindex="' + i + '">'
-        + '<span class="slider-value" id="slider-val-' + i + '">' + val + '</span>'
+        + '<span class="' + valClass + '" id="slider-val-' + i + '">' + valText + '</span>'
         + '</div></div></div>';
     }).join('');
 
@@ -189,30 +207,46 @@ function initSurvey(config) {
       + '</div>'
       + '<div class="questions-section">' + questionsHTML + '</div>'
       + '<div class="nav-wrap">'
-      + '<button class="nav-btn" id="btn-prev">← Back / पीछे</button>'
-      + '<button class="nav-btn primary" id="btn-next">' + (isLast ? 'Submit / जमा करें' : 'Continue / आगे →') + '</button>'
+      + '<button class="nav-btn" id="btn-prev"' + (currentAudio === 0 ? ' disabled' : '') + '>← Back / पीछे</button>'
+      + '<button class="nav-btn primary" id="btn-next">Continue / आगे →</button>'
       + '</div>';
 
     attachPlayer(audioFile);
 
+    function markAsTouched(slider, qi, val) {
+      slider.classList.remove('untouched');
+      var valEl = document.getElementById('slider-val-' + qi);
+      if (valEl) {
+        valEl.classList.remove('untouched');
+        valEl.textContent = val;
+      }
+      var pct = ((val - 1) / 9) * 100;
+      slider.style.background = 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, var(--border) ' + pct + '%, var(--border) 100%)';
+      if (!responses[audioFile]) responses[audioFile] = {};
+      responses[audioFile][qi] = val;
+    }
+
     document.querySelectorAll('.slider').forEach(function(slider) {
+      var qi = parseInt(slider.dataset.qindex);
+
       slider.addEventListener('input', function() {
-        var qi  = parseInt(slider.dataset.qindex);
-        var val = parseInt(slider.value);
-        var pct = ((val - 1) / 9) * 100;
-        slider.style.background = 'linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, var(--border) ' + pct + '%, var(--border) 100%)';
-        document.getElementById('slider-val-' + qi).textContent = val;
-        if (!responses[audioFile]) responses[audioFile] = {};
-        responses[audioFile][qi] = val;
+        markAsTouched(slider, qi, parseInt(slider.value));
+      });
+
+      slider.addEventListener('change', function() {
+        markAsTouched(slider, qi, parseInt(slider.value));
+      });
+
+      slider.addEventListener('pointerdown', function() {
+        setTimeout(function() {
+          markAsTouched(slider, qi, parseInt(slider.value));
+        }, 0);
       });
     });
 
     document.getElementById('btn-prev').addEventListener('click', function() {
       saveCurrentSliders(audioFile);
-      if (currentAudio === 0) {
-        currentAudio = -1;
-        render();
-      } else {
+      if (currentAudio > 0) {
         currentAudio--;
         render();
       }
@@ -220,12 +254,33 @@ function initSurvey(config) {
 
     document.getElementById('btn-next').addEventListener('click', function() {
       saveCurrentSliders(audioFile);
-      if (isLast) {
-        showFinal();
-      } else {
-        currentAudio++;
-        render();
+
+      var unanswered = false;
+      for (var i = 0; i < QUESTIONS.length; i++) {
+        if (!responses[audioFile] || responses[audioFile][i] === undefined) {
+          unanswered = true;
+          break;
+        }
       }
+
+      if (unanswered) {
+        showToast('Please answer all questions before continuing • कृपया सभी प्रश्नों का उत्तर दें');
+        QUESTIONS.forEach(function(q, i) {
+          if (!responses[audioFile] || responses[audioFile][i] === undefined) {
+            var qItem = document.getElementById('q-item-' + i);
+            if (qItem) {
+              qItem.classList.add('highlight-unanswered');
+              setTimeout(function() {
+                qItem.classList.remove('highlight-unanswered');
+              }, 1200);
+            }
+          }
+        });
+        return;
+      }
+
+      currentAudio++;
+      render();
     });
 
     updateProgress();
@@ -234,12 +289,14 @@ function initSurvey(config) {
   function saveCurrentSliders(audioFile) {
     if (!responses[audioFile]) responses[audioFile] = {};
     document.querySelectorAll('.slider').forEach(function(slider) {
-      responses[audioFile][parseInt(slider.dataset.qindex)] = parseInt(slider.value);
+      if (!slider.classList.contains('untouched')) {
+        responses[audioFile][parseInt(slider.dataset.qindex)] = parseInt(slider.value);
+      }
     });
   }
 
   function updateProgress() {
-    var pct = Math.round(((currentAudio + 1) / TOTAL) * 100);
+    var pct = Math.round((currentAudio / TOTAL) * 100);
     progressFill.style.width = pct + '%';
     progressLabel.textContent = (currentAudio + 1) + ' / ' + TOTAL;
   }

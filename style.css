@@ -230,11 +230,23 @@ body {
 }
 
 .question-item {
-  padding: 26px 0;
+  padding: 26px 12px;
+  margin: 0 -12px;
   border-bottom: 1px solid var(--border);
+  transition: background 0.3s ease;
 }
 
 .question-item:last-child { border-bottom: none; }
+
+.question-item.highlight-unanswered {
+  animation: pulse-unanswered 0.8s ease;
+}
+
+@keyframes pulse-unanswered {
+  0% { background: transparent; }
+  35% { background: rgba(201, 169, 110, 0.12); border-radius: var(--radius); }
+  100% { background: transparent; }
+}
 
 .question-header {
   display: flex;
@@ -424,6 +436,7 @@ body {
 }
 
 .slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
 .slider::-moz-range-thumb {
   width: 18px; height: 18px;
   border-radius: 50%;
@@ -431,6 +444,36 @@ body {
   border: 2px solid var(--bg);
   box-shadow: 0 0 0 2px var(--accent);
   cursor: pointer;
+  transition: transform var(--transition);
+}
+
+.slider::-moz-range-thumb:hover { transform: scale(1.2); }
+
+/* ── Untouched / Discoloured Slider ── */
+.slider.untouched {
+  background: #282828 !important;
+}
+
+.slider.untouched::-webkit-slider-thumb {
+  background: #4a4742 !important;
+  box-shadow: 0 0 0 2px #302e2b !important;
+  border: 2px solid var(--bg) !important;
+}
+
+.slider.untouched::-webkit-slider-thumb:hover {
+  background: #5c5852 !important;
+  box-shadow: 0 0 0 2px #44403a !important;
+}
+
+.slider.untouched::-moz-range-thumb {
+  background: #4a4742 !important;
+  box-shadow: 0 0 0 2px #302e2b !important;
+  border: 2px solid var(--bg) !important;
+}
+
+.slider.untouched::-moz-range-thumb:hover {
+  background: #5c5852 !important;
+  box-shadow: 0 0 0 2px #44403a !important;
 }
 
 .slider-value {
@@ -440,6 +483,14 @@ body {
   color: var(--accent);
   min-width: 20px;
   text-align: center;
+  transition: color var(--transition);
+}
+
+.slider-value.untouched {
+  color: var(--text-secondary);
+  font-family: var(--font-serif);
+  font-weight: 400;
+  opacity: 0.45;
 }
 
 /* ── Navigation buttons ── */
@@ -482,7 +533,12 @@ body {
   font-weight: 500;
 }
 
-.nav-btn.primary:hover { opacity: 0.88; }
+.nav-btn.primary:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d0d0d !important;
+  opacity: 0.88;
+}
 
 /* ── Thank You / Final Screen ── */
 .final-screen {
@@ -525,7 +581,10 @@ body {
   transition: opacity var(--transition);
 }
 
-.download-btn:hover { opacity: 0.88; }
+.download-btn:hover {
+  opacity: 0.88;
+  color: #0d0d0d;
+}
 
 /* ── Unanswered warning ── */
 .warning-toast {
