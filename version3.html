@@ -7,24 +7,21 @@
   <meta name="description" content="Linguistic perception survey — Version 3. Listen to each audio clip and rate it on five perceptual dimensions.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+Devanagari:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <!-- Language Toggler -->
-  <nav class="lang-bar" role="navigation" aria-label="Language selector">
-    <button class="lang-btn active" data-lang="en"    id="lang-en"    aria-label="English">EN</button>
-    <button class="lang-btn"        data-lang="hi"    id="lang-hi"    aria-label="Hindi">हि</button>
-    <button class="lang-btn"        data-lang="hirom" id="lang-hirom" aria-label="Romanized Hindi">HI (Rom)</button>
-  </nav>
 
   <main class="container" role="main">
 
     <!-- Header -->
     <header class="site-header">
       <h1 class="site-title">Audio Perception Survey</h1>
-      <p class="site-subtitle">Listen carefully and respond to each question.</p>
+      <p class="site-subtitle">
+        Listen carefully and respond to each question.<br>
+        <span class="sub-hi">कृपया ध्यान से सुनें और प्रत्येक प्रश्न का उत्तर दें।</span><br>
+        <span class="sub-hirom">Kripaya dhyan se sunein aur har prashn ka jawab dein.</span>
+      </p>
     </header>
 
     <!-- Progress -->
@@ -32,10 +29,10 @@
       <div class="progress-track">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <span class="progress-label" id="progress-label">1 / 6</span>
+      <span class="progress-label" id="progress-label">Details / विवरण</span>
     </div>
 
-    <!-- Audio Card (dynamically rendered) -->
+    <!-- Audio Card (dynamically rendered: Demographics then Audio clips) -->
     <div class="audio-card" id="audio-card"></div>
 
     <!-- Final / Thank You Screen -->

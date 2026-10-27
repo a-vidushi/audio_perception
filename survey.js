@@ -3,74 +3,34 @@
  * Called with: initSurvey(config)
  */
 
-// ── Question bank (all 3 languages) ──────────────────────────────────────────
+// ── Question bank (English, Hindi Devanagari, and Hindi Roman) ────────────────
 const QUESTIONS = [
   {
-    en:    "Q1 placeholder — How natural did the speech sound to you?",
-    hi:    "Q1 placeholder — आपको भाषण कितना स्वाभाविक लगा?",
-    hirom: "Q1 placeholder — Aapko bhashan kitna swabhavik laga?"
+    en:    "How easy do you think this person would be to strike up a conversation with?",
+    hi:    "इनसे बात करना आपको कितना आसान लगेगा?",
+    hirom: "Inse baat karna aapko kitna aasaan lagega?"
   },
   {
-    en:    "Q2 placeholder — How clearly could you understand the speaker?",
-    hi:    "Q2 placeholder — आप वक्ता को कितनी स्पष्टता से समझ सके?",
-    hirom: "Q2 placeholder — Aap vakta ko kitni spashtataa se samajh sake?"
+    en:    "How educated do you think this person sounds?",
+    hi:    "ये आपको कितने पढ़े-लिखे सुनाई देते हैं?",
+    hirom: "Ye aapko kitne padhe-likhe sunaai dete hain?"
   },
   {
-    en:    "Q3 placeholder — How pleasant did the voice sound?",
-    hi:    "Q3 placeholder — आवाज़ आपको कितनी सुखद लगी?",
-    hirom: "Q3 placeholder — Awaaz aapko kitni sukhad lagi?"
+    en:    "How ambitious do you think this person sounds?",
+    hi:    "आपके हिसाब से, सिर्फ उनको सुनके, आपको ये कितने ambitious (महत्वाकांक्षी) लगते हैं?",
+    hirom: "Aapke hisaab se, sirf unko sunke, aapko ye kitne ambitious lagte hain?"
   },
   {
-    en:    "Q4 placeholder — How appropriate was the speaking pace?",
-    hi:    "Q4 placeholder — बोलने की गति कितनी उचित थी?",
-    hirom: "Q4 placeholder — Bolne ki gati kitni uchit thi?"
+    en:    "How grammatically correct would you say this person's speech is?",
+    hi:    "इनकी बोली आपको कितनी शुद्ध लगती है?",
+    hirom: "Inki boli aapko kitni shudhh lagti hai?"
   },
   {
-    en:    "Q5 placeholder — How confident did the speaker sound?",
-    hi:    "Q5 placeholder — वक्ता कितने आत्मविश्वास के साथ बोल रहे थे?",
-    hirom: "Q5 placeholder — Vakta kitne aatmavishwas ke saath bol rahe the?"
+    en:    "Would you hire this person for a white collar job for your company?",
+    hi:    "क्या आप इनको अपने एक ऑफिस की एक अच्छी नौकरी पर रखना चाहेंगे?",
+    hirom: "Kya aap inko apne ek office ki ek achhi naukri par rakhna chahenge?"
   }
 ];
-
-const SLIDER_LEFT  = { en: "Not at all",     hi: "बिल्कुल नहीं",  hirom: "Bilkul nahin" };
-const SLIDER_RIGHT = { en: "Extremely",       hi: "अत्यंत",       hirom: "Atyant" };
-
-// ── Language strings ──────────────────────────────────────────────────────────
-const STRINGS = {
-  en: {
-    listenNote:   "Please listen to the audio before answering.",
-    prevBtn:      "← Back",
-    nextBtn:      "Continue →",
-    submitBtn:    "Submit",
-    finalTitle:   "Thank you.",
-    finalSub:     "Your responses have been recorded.",
-    downloadBtn:  "Download Responses (CSV)",
-    audioLabel:   function(n, total) { return "Audio " + n + " of " + total; },
-    unanswered:   "Please answer all questions before continuing.",
-  },
-  hi: {
-    listenNote:   "कृपया उत्तर देने से पहले ऑडियो सुनें।",
-    prevBtn:      "← पीछे",
-    nextBtn:      "आगे →",
-    submitBtn:    "जमा करें",
-    finalTitle:   "धन्यवाद।",
-    finalSub:     "आपकी प्रतिक्रियाएँ दर्ज की जा चुकी हैं।",
-    downloadBtn:  "प्रतिक्रियाएँ डाउनलोड करें (CSV)",
-    audioLabel:   function(n, total) { return "ऑडियो " + n + " / " + total; },
-    unanswered:   "कृपया आगे बढ़ने से पहले सभी प्रश्नों का उत्तर दें।",
-  },
-  hirom: {
-    listenNote:   "Kripaya jawab dene se pehle audio sunein.",
-    prevBtn:      "← Peeche",
-    nextBtn:      "Aage →",
-    submitBtn:    "Jama karein",
-    finalTitle:   "Dhanyavaad.",
-    finalSub:     "Aapke jawab darj kar liye gaye hain.",
-    downloadBtn:  "Jawab Download Karein (CSV)",
-    audioLabel:   function(n, total) { return "Audio " + n + " / " + total; },
-    unanswered:   "Kripaya aage badhne se pehle sabhi prashnon ka jawab dein.",
-  }
-};
 
 // ── Main init ─────────────────────────────────────────────────────────────────
 function initSurvey(config) {
@@ -78,38 +38,125 @@ function initSurvey(config) {
   var AUDIOS    = config.audios;
   var TOTAL     = AUDIOS.length;
 
-  var currentAudio = 0;
-  var lang         = 'en';
+  var currentAudio = -1; // -1 represents participant demographics screen
   var responses    = {};
   var audioPlayed  = {};
+  var toastTimer   = null;
 
+  var demographics = {
+    age: '',
+    city: ''
+  };
+
+  // Restore saved demographics if any
+  try {
+    var savedDemographics = localStorage.getItem('survey_demographics');
+    if (savedDemographics) {
+      demographics = JSON.parse(savedDemographics);
+    }
+  } catch (e) {}
+
+  var progressWrap  = document.getElementById('progress-wrap');
   var progressFill  = document.getElementById('progress-fill');
   var progressLabel = document.getElementById('progress-label');
   var audioCard     = document.getElementById('audio-card');
   var finalScreen   = document.getElementById('final-screen');
-  var langBtns      = document.querySelectorAll('.lang-btn');
   var toast         = document.getElementById('toast');
 
-  langBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      lang = btn.dataset.lang;
-      langBtns.forEach(function(b) { b.classList.toggle('active', b === btn); });
-      renderCard();
-    });
-  });
+  var audioEl = null;
 
-  function renderCard() {
+  function render() {
+    if (currentAudio === -1) {
+      renderDemographics();
+    } else {
+      renderAudioCard();
+    }
+  }
+
+  function renderDemographics() {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+
+    progressWrap.style.display = 'flex';
+    progressFill.style.width = '0%';
+    progressLabel.textContent = 'Details / विवरण';
+
+    audioCard.innerHTML = ''
+      + '<div class="demographics-card-inner">'
+      + '<div class="demographics-header">'
+      + '<h2 class="demographics-title">Participant Details</h2>'
+      + '<p class="demographics-sub-hi">प्रतिभागी विवरण</p>'
+      + '<p class="demographics-sub-hirom">Prathibhagi Vivaran</p>'
+      + '</div>'
+      + '<div class="demographics-intro">'
+      + '<p class="q-en">Please enter your age and the city you are from before beginning the survey.</p>'
+      + '<p class="q-hi">सर्वेक्षण शुरू करने से पहले कृपया अपनी उम्र और आप किस शहर से हैं, यह बताएं।</p>'
+      + '<p class="q-hirom">Survey shuru karne se pehle kripaya apni umar aur aap kis sheher se hain, yeh batayein.</p>'
+      + '</div>'
+      + '<div class="demographics-body">'
+      + '<div class="demographics-field">'
+      + '<label class="demographics-label" for="input-age">'
+      + '<span class="q-en">1. What is your age?</span>'
+      + '<span class="q-hi">आपकी उम्र क्या है?</span>'
+      + '<span class="q-hirom">Aapki umar kya hai?</span>'
+      + '</label>'
+      + '<input type="number" id="input-age" class="demographics-input" min="1" max="120" placeholder="e.g. 21" value="' + (demographics.age || '') + '">'
+      + '</div>'
+      + '<div class="demographics-field">'
+      + '<label class="demographics-label" for="input-city">'
+      + '<span class="q-en">2. Which city are you from?</span>'
+      + '<span class="q-hi">आप किस शहर से हैं?</span>'
+      + '<span class="q-hirom">Aap kis sheher se hain?</span>'
+      + '</label>'
+      + '<input type="text" id="input-city" class="demographics-input" placeholder="e.g. Delhi, Lucknow, Mumbai..." value="' + (demographics.city || '') + '">'
+      + '</div>'
+      + '</div>'
+      + '<div class="nav-wrap" style="justify-content: flex-end;">'
+      + '<button class="nav-btn primary" id="btn-start-survey">Begin Survey / शुरू करें →</button>'
+      + '</div>'
+      + '</div>';
+
+    document.getElementById('btn-start-survey').addEventListener('click', function() {
+      var ageVal = (document.getElementById('input-age').value || '').trim();
+      var cityVal = (document.getElementById('input-city').value || '').trim();
+
+      if (!ageVal || !cityVal) {
+        showToast('Please enter both your age and city / कृपया अपनी उम्र और शहर दोनों भरें');
+        return;
+      }
+
+      demographics.age = ageVal;
+      demographics.city = cityVal;
+
+      try {
+        localStorage.setItem('survey_demographics', JSON.stringify(demographics));
+      } catch (e) {}
+
+      currentAudio = 0;
+      render();
+    });
+  }
+
+  function renderAudioCard() {
     var audioFile = AUDIOS[currentAudio];
-    var s         = STRINGS[lang];
     var saved     = responses[audioFile] || {};
 
     var questionsHTML = QUESTIONS.map(function(q, i) {
       var val = saved[i] !== undefined ? saved[i] : 5;
       var pct = ((val - 1) / 9) * 100;
       return '<div class="question-item">'
-        + '<p class="question-text"><span class="q-num">' + (i + 1) + '.</span>' + q[lang] + '</p>'
+        + '<div class="question-header">'
+        + '<span class="q-num">' + (i + 1) + '.</span>'
+        + '<div class="q-multilang">'
+        + '<p class="q-en">' + q.en + '</p>'
+        + '<p class="q-hi">' + q.hi + '</p>'
+        + '<p class="q-hirom">' + q.hirom + '</p>'
+        + '</div>'
+        + '</div>'
         + '<div class="slider-wrap">'
-        + '<div class="slider-labels"><span>' + SLIDER_LEFT[lang] + '</span><span>' + SLIDER_RIGHT[lang] + '</span></div>'
+        + '<div class="slider-labels">'
+        + '<span>Not at all / बिल्कुल नहीं (Bilkul nahin)</span>'
+        + '<span>Extremely / अत्यंत (Atyant)</span>'
+        + '</div>'
         + '<div class="slider-row">'
         + '<input type="range" min="1" max="10" value="' + val + '" class="slider" id="slider-' + i + '" '
         + 'style="background: linear-gradient(to right, var(--accent) 0%, var(--accent) ' + pct + '%, var(--border) ' + pct + '%, var(--border) 100%)" '
@@ -123,7 +170,10 @@ function initSurvey(config) {
     audioCard.innerHTML = ''
       + '<div class="audio-card-header">'
       + '<span class="audio-number">' + (currentAudio + 1) + '</span>'
-      + '<span class="audio-card-title">' + s.audioLabel(currentAudio + 1, TOTAL) + '</span>'
+      + '<div class="audio-card-titles">'
+      + '<span class="audio-card-title">Audio ' + (currentAudio + 1) + ' of ' + TOTAL + '</span>'
+      + '<span class="audio-card-subtitle-hi">ऑडियो ' + (currentAudio + 1) + ' / ' + TOTAL + '</span>'
+      + '</div>'
       + '</div>'
       + '<div class="player-wrap">'
       + '<div class="player-inner">'
@@ -132,12 +182,15 @@ function initSurvey(config) {
       + '<div class="timeline-bar" id="timeline-bar"><div class="timeline-progress" id="timeline-progress"></div></div>'
       + '<div class="timeline-times"><span id="time-current">0:00</span><span id="time-total">—</span></div>'
       + '</div></div>'
-      + '<p class="listen-note">' + s.listenNote + '</p>'
+      + '<p class="listen-note">'
+      + 'Please listen to the audio before answering.<br>'
+      + '<span>कृपया उत्तर देने से पहले ऑडियो सुनें • Kripaya jawab dene se pehle audio sunein.</span>'
+      + '</p>'
       + '</div>'
       + '<div class="questions-section">' + questionsHTML + '</div>'
       + '<div class="nav-wrap">'
-      + '<button class="nav-btn" id="btn-prev"' + (currentAudio === 0 ? ' disabled' : '') + '>' + s.prevBtn + '</button>'
-      + '<button class="nav-btn primary" id="btn-next">' + (isLast ? s.submitBtn : s.nextBtn) + '</button>'
+      + '<button class="nav-btn" id="btn-prev">← Back / पीछे</button>'
+      + '<button class="nav-btn primary" id="btn-next">' + (isLast ? 'Submit / जमा करें' : 'Continue / आगे →') + '</button>'
       + '</div>';
 
     attachPlayer(audioFile);
@@ -156,14 +209,23 @@ function initSurvey(config) {
 
     document.getElementById('btn-prev').addEventListener('click', function() {
       saveCurrentSliders(audioFile);
-      currentAudio--;
-      renderCard();
+      if (currentAudio === 0) {
+        currentAudio = -1;
+        render();
+      } else {
+        currentAudio--;
+        render();
+      }
     });
 
     document.getElementById('btn-next').addEventListener('click', function() {
       saveCurrentSliders(audioFile);
-      if (isLast) { showFinal(); }
-      else { currentAudio++; renderCard(); }
+      if (isLast) {
+        showFinal();
+      } else {
+        currentAudio++;
+        render();
+      }
     });
 
     updateProgress();
@@ -177,12 +239,10 @@ function initSurvey(config) {
   }
 
   function updateProgress() {
-    var pct = Math.round((currentAudio / TOTAL) * 100);
+    var pct = Math.round(((currentAudio + 1) / TOTAL) * 100);
     progressFill.style.width = pct + '%';
     progressLabel.textContent = (currentAudio + 1) + ' / ' + TOTAL;
   }
-
-  var audioEl = null;
 
   function attachPlayer(audioFile) {
     if (audioEl) { audioEl.pause(); audioEl = null; }
@@ -230,15 +290,14 @@ function initSurvey(config) {
   function showFinal() {
     if (audioEl) audioEl.pause();
     audioCard.style.display = 'none';
-    document.getElementById('progress-wrap').style.display = 'none';
+    progressWrap.style.display = 'none';
     finalScreen.classList.add('visible');
 
-    var s = STRINGS[lang];
-    document.getElementById('final-title').textContent = s.finalTitle;
-    document.getElementById('final-sub').textContent   = s.finalSub;
+    document.getElementById('final-title').innerHTML = 'Thank you.<br><span style="font-size:24px;color:#d8d0c5;">धन्यवाद।</span>';
+    document.getElementById('final-sub').innerHTML   = 'Your responses have been recorded.<br><span style="font-size:15px;color:var(--text-secondary);">आपकी प्रतिक्रियाएँ दर्ज कर ली गई हैं। (Aapke jawab darj kar liye gaye hain.)</span>';
 
     var dlBtn = document.getElementById('download-btn');
-    dlBtn.textContent = s.downloadBtn;
+    dlBtn.innerHTML = '⬇ Download Responses (CSV) / प्रतिक्रियाएँ डाउनलोड करें';
 
     // Auto-submit to Google Sheets
     submitToSheets(function(ok) {
@@ -252,11 +311,10 @@ function initSurvey(config) {
   }
 
   // ── Submit to Google Sheets ──────────────────────────────────────────────────
-  var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzBBd_JTtiQg8tRpocrWNWWoKgUk8vV_0itOixiJO8VvHOMZf--6V8zORVDwdPlQnrxtQ/exec'; // ← paste your deployment URL
+  var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzBBd_JTtiQg8tRpocrWNWWoKgUk8vV_0itOixiJO8VvHOMZf--6V8zORVDwdPlQnrxtQ/exec';
 
   function submitToSheets(callback) {
     if (!SHEETS_URL || SHEETS_URL === 'YOUR_APPS_SCRIPT_URL_HERE') {
-      // No URL set yet — fall back to CSV
       callback(false);
       return;
     }
@@ -274,41 +332,53 @@ function initSurvey(config) {
         r[1] !== undefined ? r[1] : '',
         r[2] !== undefined ? r[2] : '',
         r[3] !== undefined ? r[3] : '',
-        r[4] !== undefined ? r[4] : ''
+        r[4] !== undefined ? r[4] : '',
+        demographics.age || '',
+        demographics.city || ''
       ]);
     });
 
     fetch(SHEETS_URL, {
       method: 'POST',
-      mode: 'no-cors',                              // avoids CORS preflight; response will be opaque
-      body: JSON.stringify({ rows: rows }),
+      mode: 'no-cors',
+      body: JSON.stringify({
+        rows: rows,
+        age: demographics.age || '',
+        city: demographics.city || '',
+        version: VERSION
+      }),
       headers: { 'Content-Type': 'text/plain' }
     })
     .then(function() {
-      callback(true);  // opaque response — assume success, data reached the Sheet
+      callback(true);
     })
     .catch(function() {
-      callback(false); // actual network failure — show CSV fallback
+      callback(false);
     });
   }
 
   // ── CSV fallback ─────────────────────────────────────────────────────────────
   function downloadCSV() {
-    var rows = [['Timestamp', 'Version', 'Audio File', 'Audio Order', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5']];
+    var rows = [['Timestamp', 'Version', 'Audio File', 'Audio Order', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Age', 'City']];
     var timestamp = new Date().toISOString();
     AUDIOS.forEach(function(file, audioIndex) {
       var r = responses[file] || {};
       rows.push([
-        timestamp, 'v' + VERSION, file, audioIndex + 1,
+        timestamp,
+        'v' + VERSION,
+        file,
+        audioIndex + 1,
         r[0] !== undefined ? r[0] : '',
         r[1] !== undefined ? r[1] : '',
         r[2] !== undefined ? r[2] : '',
         r[3] !== undefined ? r[3] : '',
-        r[4] !== undefined ? r[4] : ''
+        r[4] !== undefined ? r[4] : '',
+        demographics.age || '',
+        demographics.city || ''
       ]);
     });
-    var csv  = rows.map(function(r) { return r.map(function(c) { return '"' + c + '"'; }).join(','); }).join('\n');
-    var blob = new Blob([csv], { type: 'text/csv' });
+    var csv  = rows.map(function(r) { return r.map(function(c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
     a.href   = url;
@@ -316,7 +386,6 @@ function initSurvey(config) {
     a.click();
     URL.revokeObjectURL(url);
   }
-
 
   function showToast(msg) {
     toast.textContent = msg;
@@ -338,5 +407,5 @@ function initSurvey(config) {
     return m + ':' + (s < 10 ? '0' : '') + s;
   }
 
-  renderCard();
+  render();
 }
