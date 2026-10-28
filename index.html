@@ -51,6 +51,11 @@
 
   <script src="survey.js"></script>
   <script>
+    // ── Version Assignment Toggle ────────────────────────────────────────────────
+    // Set to 3 to force Version 3 for all new/current participants.
+    // To reverse back to equal random distribution across v1, v2, v3: set to null.
+    var FORCE_VERSION = 3;
+
     // Cyclic audio assignment per version:
     //   v1: 11, 22, 33, 41, 52, 63
     //   v2: 12, 23, 31, 42, 53, 61
@@ -71,6 +76,15 @@
       return a;
     }
 
+    function getVersion() {
+      if (FORCE_VERSION) {
+        for (var i = 0; i < VERSIONS.length; i++) {
+          if (VERSIONS[i].version === FORCE_VERSION) return VERSIONS[i];
+        }
+      }
+      return VERSIONS[Math.floor(Math.random() * VERSIONS.length)];
+    }
+
     var STORAGE_KEY = 'survey_assignment';
     var assigned;
 
@@ -80,14 +94,13 @@
         // Returning visitor — restore their exact assignment
         assigned = JSON.parse(saved);
       } else {
-        // First visit — pick a random version and shuffle audio order
-        var pick = VERSIONS[Math.floor(Math.random() * 3)];
+        // First visit — pick version (forced or random) and shuffle audio order
+        var pick = getVersion();
         assigned = { version: pick.version, audios: shuffle(pick.audios) };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(assigned));
       }
     } catch (e) {
-      // localStorage unavailable — just assign randomly
-      var pick = VERSIONS[Math.floor(Math.random() * 3)];
+      var pick = getVersion();
       assigned = { version: pick.version, audios: shuffle(pick.audios) };
     }
 
