@@ -25,7 +25,7 @@
     </header>
 
     <!-- Progress -->
-    <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-wrap" id="progress-wrap" style="display: none;">
       <div class="progress-track">
         <div class="progress-fill" id="progress-fill"></div>
       </div>
@@ -33,12 +33,7 @@
     </div>
 
     <!-- Audio Card (dynamically rendered: Audio clips then Demographics) -->
-    <div class="audio-card" id="audio-card">
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        <p class="loading-text">Loading survey...<br><span style="font-size:14px;color:var(--text-secondary);">सर्वेक्षण लोड हो रहा है...</span></p>
-      </div>
-    </div>
+    <div class="audio-card" id="audio-card"></div>
 
     <!-- Final / Thank You Screen -->
     <div class="final-screen" id="final-screen" role="region" aria-label="Completion screen">
@@ -95,61 +90,61 @@
     var STORAGE_KEY = 'survey_assignment';
     var SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzBBd_JTtiQg8tRpocrWNWWoKgUk8vV_0itOixiJO8VvHOMZf--6V8zORVDwdPlQnrxtQ/exec';
 
-    function startWithVersion(pick) {
+    function buildAssignment(pick) {
       var assigned = { version: pick.version, audios: shuffle(pick.audios) };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(assigned));
       } catch (e) {}
-      initSurvey(assigned);
+      return assigned;
     }
 
     // 1. Returning visitor check: restore existing assignment immediately
-    var assigned = null;
+    var savedAssignment = null;
     try {
       var saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        assigned = JSON.parse(saved);
+        savedAssignment = JSON.parse(saved);
       }
     } catch (e) {}
 
-    if (assigned) {
-      initSurvey(assigned);
-    } else if (FORCE_VERSION) {
-      // 2. Manual version override
-      startWithVersion(getVersionByNumber(FORCE_VERSION));
-    } else {
-      // 3. New visitor: Auto-balance using least populated version from Google Sheets
-      var resolved = false;
-      var timeoutTimer = setTimeout(function() {
-        if (!resolved) {
-          resolved = true;
-          startWithVersion(getRandomVersion());
-        }
-      }, 2500);
+    var configPromise;
 
-      fetch(SHEETS_URL)
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
+    if (savedAssignment) {
+      configPromise = Promise.resolve(savedAssignment);
+    } else if (FORCE_VERSION) {
+      configPromise = Promise.resolve(buildAssignment(getVersionByNumber(FORCE_VERSION)));
+    } else {
+      configPromise = new Promise(function(resolve) {
+        var resolved = false;
+        var timeoutTimer = setTimeout(function() {
           if (!resolved) {
             resolved = true;
-            clearTimeout(timeoutTimer);
-            if (data && data.least) {
-              startWithVersion(getVersionByNumber(data.least));
-            } else {
-              startWithVersion(getRandomVersion());
+            resolve(buildAssignment(getRandomVersion()));
+          }
+        }, 2000);
+
+        fetch(SHEETS_URL)
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeoutTimer);
+              var pick = (data && data.least) ? getVersionByNumber(data.least) : getRandomVersion();
+              resolve(buildAssignment(pick));
             }
-          }
-        })
-        .catch(function() {
-          if (!resolved) {
-            resolved = true;
-            clearTimeout(timeoutTimer);
-            startWithVersion(getRandomVersion());
-          }
-        });
+          })
+          .catch(function() {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timeoutTimer);
+              resolve(buildAssignment(getRandomVersion()));
+            }
+          });
+      });
     }
 
-    initSurvey(assigned);
+    // Launch survey immediately — Intro slide displays with 0ms delay!
+    initSurvey(configPromise);
   </script>
 
 </body>

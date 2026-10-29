@@ -34,10 +34,14 @@ const QUESTIONS = [
 
 // ── Main init ─────────────────────────────────────────────────────────────────
 function initSurvey(config) {
-  var VERSION   = config.version;
-  var AUDIOS    = config.audios;
-  var TOTAL     = AUDIOS.length;
+  var VERSION      = null;
+  var AUDIOS       = [];
+  var TOTAL        = 0;
+  var configReady  = false;
+  var pendingStart = false;
 
+  var isIntro      = true;
+  var hasStarted   = false;
   var currentAudio = 0;
   var responses    = {};
   var audioPlayed  = {};
@@ -65,12 +69,82 @@ function initSurvey(config) {
 
   var audioEl = null;
 
+  function applyConfig(cfg) {
+    if (!cfg || !cfg.audios) return;
+    VERSION     = cfg.version;
+    AUDIOS      = cfg.audios;
+    TOTAL       = AUDIOS.length;
+    configReady = true;
+
+    if (pendingStart) {
+      pendingStart = false;
+      isIntro = false;
+      hasStarted = true;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  if (config && typeof config.then === 'function') {
+    config.then(applyConfig);
+  } else if (config && config.audios) {
+    applyConfig(config);
+  }
+
   function render() {
-    if (currentAudio >= TOTAL) {
+    if (isIntro) {
+      renderIntro();
+    } else if (currentAudio >= TOTAL) {
       renderDemographics();
     } else {
       renderAudioCard();
     }
+  }
+
+  function renderIntro() {
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+
+    progressWrap.style.display = 'none';
+
+    var btnLabel = hasStarted
+      ? 'Continue to Survey / आगे बढ़ें →'
+      : 'Start Survey / शुरू करें →';
+
+    audioCard.innerHTML = ''
+      + '<div class="intro-card-inner">'
+      + '<div class="intro-header">'
+      + '<h2 class="intro-title">Introduction &amp; Instructions</h2>'
+      + '<p class="intro-sub-hi">परिचय एवं निर्देश</p>'
+      + '<p class="intro-sub-hirom">Parichay evam Nirdesh</p>'
+      + '</div>'
+      + '<div class="intro-body">'
+      + '<p class="intro-text-en">'
+      + 'No preparation or prior knowledge is needed for this survey. You will listen to a few short audio clips and answer the questions using the sliders. There are no right or wrong answers, just listen and rate whatever you feel. Your data is completely safe and anonymous.'
+      + '</p>'
+      + '<p class="intro-text-hi">'
+      + 'इस सर्वे के लिए किसी तैयारी या पहले से जानकारी की कोई ज़रूरत नहीं है। आपको बस कुछ छोटे ऑडियो सुनने हैं और स्लाइडर से पूछे गए सवालों के जवाब देने हैं। इसमें कोई सही या गलत जवाब नहीं है, बस आवाज़ सुनकर आपको जो भी लगे, उसी हिसाब से जवाब दें। आपका डेटा पूरी तरह सुरक्षित है।'
+      + '</p>'
+      + '<p class="intro-text-hirom">'
+      + 'Is survey ke liye kisi preparation ya pehle se jaankari ki koi zaroorat nahi hai. Aapko bas kuch chhote audios sunne hain aur slider se sawalon ke jawab dene hain. Isme koi sahi ya galat jawab nahi hai, bas sunkar aapko jo bhi lage, usi hisaab se jawab dein. Aapka data bilkul surakshit hai.'
+      + '</p>'
+      + '</div>'
+      + '<div class="nav-wrap intro-nav">'
+      + '<button class="nav-btn primary" id="btn-start-survey">' + btnLabel + '</button>'
+      + '</div>'
+      + '</div>';
+
+    document.getElementById('btn-start-survey').addEventListener('click', function() {
+      if (!configReady) {
+        pendingStart = true;
+        var btn = document.getElementById('btn-start-survey');
+        if (btn) btn.textContent = 'Loading / लोड हो रहा है...';
+        return;
+      }
+      isIntro = false;
+      hasStarted = true;
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   function renderDemographics() {
@@ -124,6 +198,7 @@ function initSurvey(config) {
 
       currentAudio = TOTAL - 1;
       render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     document.getElementById('btn-submit-survey').addEventListener('click', function() {
@@ -147,6 +222,7 @@ function initSurvey(config) {
   }
 
   function renderAudioCard() {
+    progressWrap.style.display = 'flex';
     var audioFile = AUDIOS[currentAudio];
     var saved     = responses[audioFile] || {};
 
@@ -173,7 +249,7 @@ function initSurvey(config) {
         + '<div class="slider-wrap">'
         + '<div class="slider-labels">'
         + '<span>Not at all / बिल्कुल नहीं (Bilkul nahin)</span>'
-        + '<span>Extremely / अत्यंत (Atyant)</span>'
+        + '<span>Extremely / बहुत (Bohot)</span>'
         + '</div>'
         + '<div class="slider-row">'
         + '<input type="range" min="1" max="10" value="' + val + '" class="' + sliderClass + '" id="slider-' + i + '" '
@@ -207,7 +283,7 @@ function initSurvey(config) {
       + '</div>'
       + '<div class="questions-section">' + questionsHTML + '</div>'
       + '<div class="nav-wrap">'
-      + '<button class="nav-btn" id="btn-prev"' + (currentAudio === 0 ? ' disabled' : '') + '>← Back / पीछे</button>'
+      + '<button class="nav-btn" id="btn-prev">← Back / पीछे</button>'
       + '<button class="nav-btn primary" id="btn-next">Continue / आगे →</button>'
       + '</div>';
 
@@ -249,7 +325,11 @@ function initSurvey(config) {
       if (currentAudio > 0) {
         currentAudio--;
         render();
+      } else {
+        isIntro = true;
+        render();
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     document.getElementById('btn-next').addEventListener('click', function() {
@@ -281,6 +361,7 @@ function initSurvey(config) {
 
       currentAudio++;
       render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 
     updateProgress();
